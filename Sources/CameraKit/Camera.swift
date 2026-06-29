@@ -20,23 +20,31 @@ public struct Camera<Overlay: View>: View {
         ZStack {
             switch store.authorizationState {
             case .authorized:
-#if DEBUG
-                ContentUnavailableView(
-                    "Camera is not supported on this platform",
-                    systemImage: "camera.slash"
-                )
-                .labelStyle(.titleAndIcon)
-#else
-                CameraPreview(
-                    session: store.session,
-                    isTapGestureEnabled: configuration.tapToFocus || configuration.tapToExpose,
-                    onTap: store.handlePreviewTap(at:)
-                )
-                .overlay {
-                    overlay
+                if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
+                    ContentUnavailableView(
+                        "Camera is not supported in Preview",
+                        systemImage: "camera.slash"
+                    )
+                    .labelStyle(.titleAndIcon)
+                } else {
+                    #if targetEnvironment(simulator)
+                    ContentUnavailableView(
+                        "Camera is not supported in Simulator",
+                        systemImage: "camera.slash"
+                    )
+                    .labelStyle(.titleAndIcon)
+                    #else
+                    CameraPreview(
+                        session: store.session,
+                        isTapGestureEnabled: configuration.tapToFocus || configuration.tapToExpose,
+                        onTap: store.handlePreviewTap(at:)
+                    )
+                    .overlay {
+                        overlay
+                    }
+                    #endif
                 }
-#endif
-
+                
                 if let controls {
                     VStack {
                         Spacer()

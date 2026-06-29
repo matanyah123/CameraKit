@@ -20,6 +20,12 @@ public struct Camera<Overlay: View>: View {
         ZStack {
             switch store.authorizationState {
             case .authorized:
+#if DEBUG
+                ContentUnavailableView(
+                    "Camera is not supported on this platform",
+                    systemImage: "camera.slash"
+                )
+#else
                 CameraPreview(
                     session: store.session,
                     isTapGestureEnabled: configuration.tapToFocus || configuration.tapToExpose,
@@ -28,6 +34,7 @@ public struct Camera<Overlay: View>: View {
                 .overlay {
                     overlay
                 }
+#endif
 
                 if let controls {
                     VStack {

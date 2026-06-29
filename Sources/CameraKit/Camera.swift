@@ -25,6 +25,7 @@ public struct Camera<Overlay: View>: View {
                     "Camera is not supported on this platform",
                     systemImage: "camera.slash"
                 )
+                .labelStyle(.titleAndIcon)
 #else
                 CameraPreview(
                     session: store.session,

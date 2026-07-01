@@ -1,8 +1,28 @@
+import Foundation
 import Testing
 @testable import CameraKit
 
-@Test func example() async throws {
-    // Write your test here and use APIs like `#expect(...)` to check expected conditions.
-    // Swift Testing Documentation
-    // https://developer.apple.com/documentation/testing
+@MainActor
+struct CameraKitTests {
+    @Test
+    func outputTracksCapturedPhotos() {
+        let output = CameraOutput()
+        let payload = Data([0xFF, 0xD8, 0xFF, 0xD9])
+
+        output.appendPhotoData(payload)
+
+        #expect(output.photos.count == 1)
+        #expect(output.lastPhoto?.imageData == payload)
+
+        output.removeAllPhotos()
+
+        #expect(output.photos.isEmpty)
+        #expect(output.lastPhoto == nil)
+    }
+
+    @Test
+    func cameraErrorDescriptionsAreHelpful() {
+        #expect(CameraError.captureFailed.errorDescription == "The photo could not be captured.")
+        #expect(CameraError.cameraUnavailable(.front).errorDescription == "No front camera is available on this device.")
+    }
 }

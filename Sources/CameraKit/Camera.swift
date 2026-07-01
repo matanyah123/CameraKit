@@ -1,8 +1,11 @@
 import SwiftUI
 
+@available(iOS 17, macOS 14, *)
 public struct Camera<Overlay: View>: View {
     @Environment(\.cameraConfiguration) private var configuration
     @Environment(\.cameraControlsContent) private var controls
+    @Environment(\.cameraPresentationConfiguration) private var presentation
+    @Environment(\.cameraStatusContentConfiguration) private var statusContent
 
     @StateObject private var store: CameraStore
 
@@ -28,16 +31,15 @@ public struct Camera<Overlay: View>: View {
                     .labelStyle(.titleAndIcon)
                 } else {
                     #if targetEnvironment(simulator)
-                    ContentUnavailableView(
-                        "Camera is not supported in Simulator",
-                        systemImage: "camera.slash"
-                    )
-                    .labelStyle(.titleAndIcon)
+                    unsupportedContent(message: "Camera is not supported in Simulator")
                     #else
                     CameraPreview(
                         session: store.session,
                         isTapGestureEnabled: configuration.tapToFocus || configuration.tapToExpose,
-                        onTap: store.handlePreviewTap(at:)
+                        isPinchToZoomEnabled: configuration.isPinchToZoomEnabled,
+                        contentMode: presentation.previewContentMode,
+                        onTap: store.handlePreviewTap(at:),
+                        onPinch: store.handlePreviewPinch(scaleDelta:)
                     )
                     .overlay {
                         overlay
@@ -46,22 +48,18 @@ public struct Camera<Overlay: View>: View {
                 }
                 
                 if let controls {
-                    VStack {
-                        Spacer()
-                        controls
-                    }
-                    .padding()
+                    controlsContainer(controls)
                 }
             case .denied:
-                CameraPermissionDeniedView()
+                permissionDeniedContent
             case .notDetermined, .restricted:
-                CameraLoadingView()
+                loadingContent
             @unknown default:
-                CameraLoadingView()
+                loadingContent
             }
         }
         .background(Color.black)
-        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: presentation.cornerRadius, style: .continuous))
         .environment(\.cameraControlContext, store.controlContext)
         .onAppear {
             store.activate(with: configuration)
@@ -75,6 +73,7 @@ public struct Camera<Overlay: View>: View {
     }
 }
 
+@available(iOS 17, macOS 14, *)
 public extension Camera where Overlay == EmptyView {
     init(output: CameraOutput) {
         self.init(output: output) {
@@ -83,6 +82,52 @@ public extension Camera where Overlay == EmptyView {
     }
 }
 
+@available(iOS 17, macOS 14, *)
+private extension Camera {
+    var loadingContent: some View {
+        Group {
+            if let custom = statusContent.loading {
+                custom
+            } else {
+                CameraLoadingView()
+            }
+        }
+    }
+
+    var permissionDeniedContent: some View {
+        Group {
+            if let custom = statusContent.permissionDenied {
+                custom
+            } else {
+                CameraPermissionDeniedView()
+            }
+        }
+    }
+
+    func unsupportedContent(message: String) -> some View {
+        Group {
+            if let custom = statusContent.unsupported {
+                custom
+            } else {
+                ContentUnavailableView(
+                    message,
+                    systemImage: "camera.slash"
+                )
+                .labelStyle(.titleAndIcon)
+            }
+        }
+    }
+
+    func controlsContainer(_ controls: AnyView) -> some View {
+        ZStack(alignment: presentation.controlsAlignment) {
+            Color.clear
+            controls
+                .padding()
+        }
+    }
+}
+
+@available(iOS 17, macOS 14, *)
 private struct CameraLoadingView: View {
     var body: some View {
         ZStack {
@@ -94,6 +139,7 @@ private struct CameraLoadingView: View {
     }
 }
 
+@available(iOS 17, macOS 14, *)
 private struct CameraPermissionDeniedView: View {
     var body: some View {
         ZStack {

@@ -46,7 +46,7 @@ public final class CameraOutput {
     }
 }
 
-public struct CameraPhoto: Identifiable, Sendable, Equatable {
+public struct CameraPhoto: Identifiable, Sendable, Equatable, Hashable {
     public let id: UUID
     public let imageData: Data
     public let capturedAt: Date
